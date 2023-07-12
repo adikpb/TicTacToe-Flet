@@ -1,2 +1,2 @@
 # TicTacToe-Flet
- An interactice Tic Tac Toe game using Flet!
+ An Interactive Tic Tac Toe game using Flet!
