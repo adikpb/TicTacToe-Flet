@@ -2,6 +2,7 @@ from typing import Literal
 import flet
 from flet import MainAxisAlignment, CrossAxisAlignment, alignment, ImageFit
 
+
 class Box(flet.ElevatedButton):
 
     def __init__(self, box_id: tuple[int, int], symbol: Literal["X", "O"] | None = None):
@@ -17,9 +18,13 @@ class Box(flet.ElevatedButton):
 
     def setIcon(self):
         if self.symbol == "X":
-            self.content = flet.Image(src="icons/TicTacToe/X.png", fit=ImageFit.CONTAIN, repeat=flet.ImageRepeat.NO_REPEAT)
+            self.content = flet.Image(src="icons/TicTacToe/X.png",
+                                      fit=ImageFit.CONTAIN,
+                                      repeat=flet.ImageRepeat.NO_REPEAT)
         elif self.symbol == "O":
-            self.content = flet.Image(src="icons/TicTacToe/O.png", fit=ImageFit.FIT_WIDTH, repeat=flet.ImageRepeat.NO_REPEAT)
+            self.content = flet.Image(src="icons/TicTacToe/O.png",
+                                      fit=ImageFit.FIT_WIDTH,
+                                      repeat=flet.ImageRepeat.NO_REPEAT)
         elif self.symbol == None:
             self.content.src = None
 
@@ -27,7 +32,10 @@ class Box(flet.ElevatedButton):
 class BoxRow(flet.Row):
 
     def __init__(self, row: int, size: int):
-        super().__init__(expand=True, alignment=MainAxisAlignment.CENTER, vertical_alignment=CrossAxisAlignment.CENTER, spacing=10)
+        super().__init__(expand=True,
+                         alignment=MainAxisAlignment.CENTER,
+                         vertical_alignment=CrossAxisAlignment.CENTER,
+                         spacing=10)
         self.row = row
         self.size = size
 
@@ -42,10 +50,22 @@ class TicTacToeInteractive(flet.UserControl):
         self.size = size
         self.player = "X"
 
-        self.view = flet.Container(expand=True, padding=10, bgcolor=flet.colors.PRIMARY_CONTAINER, alignment=alignment.center, border=flet.border.all(2, flet.colors.OUTLINE), border_radius=flet.border_radius.all(50), theme = flet.Theme(color_scheme_seed=flet.colors.INDIGO))
-        self.inner_view = flet.Column(expand=True, spacing = 20, alignment=MainAxisAlignment.CENTER, horizontal_alignment=CrossAxisAlignment.CENTER)
-        self.playerDisplay = flet.Text(f"Player {self.player}'s Turn", style=flet.TextThemeStyle.TITLE_LARGE)
-        self.rows = [self.playerDisplay] + [BoxRow(i, self.size) for i in range(self.size)]
+        self.view = flet.Container(
+            expand=True,
+            padding=10,
+            bgcolor=flet.colors.PRIMARY_CONTAINER,
+            alignment=alignment.center,
+            border=flet.border.all(2, flet.colors.OUTLINE),
+            border_radius=flet.border_radius.all(50),
+            theme=flet.Theme(color_scheme_seed=flet.colors.INDIGO))
+        self.inner_view = flet.Column(expand=True,
+                                      spacing=20,
+                                      alignment=MainAxisAlignment.CENTER,
+                                      horizontal_alignment=CrossAxisAlignment.CENTER)
+        self.playerDisplay = flet.Text(f"Player {self.player}'s Turn",
+                                       style=flet.TextThemeStyle.TITLE_LARGE)
+        self.rows = [self.playerDisplay
+                    ] + [BoxRow(i, self.size) for i in range(self.size)]
 
     def build(self):
         self.view.content = self.inner_view
@@ -62,7 +82,8 @@ def main(page: flet.Page):
     page.horizontal_alignment = CrossAxisAlignment.CENTER
 
     interactive = TicTacToeInteractive(3)
-    page.add(flet.Text("Tic Tac Toe", style=flet.TextThemeStyle.DISPLAY_LARGE), interactive)
+    page.add(flet.Text("Tic Tac Toe", style=flet.TextThemeStyle.DISPLAY_LARGE),
+             interactive)
     interactive.update()
     page.update()
 
