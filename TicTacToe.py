@@ -1,37 +1,38 @@
-from typing import Literal
 import flet
 from flet import MainAxisAlignment, CrossAxisAlignment, alignment, ImageFit
 
-
-class Box(flet.ElevatedButton):
-
-    def __init__(self, box_id: tuple[int, int], symbol: Literal["X", "O"] | None = None):
-        super().__init__(expand=True, style=flet.ButtonStyle(shape=flet.CircleBorder()))
+class Box(flet.Container):
+    def __init__(self, box_id: tuple[int, int], manager: flet.UserControl):
+        super().__init__(expand=True,
+                         bgcolor="#C88EA7",
+                         padding=5,
+                         alignment=alignment.center,
+                         border=flet.border.all(1, flet.colors.BLACK),
+                         border_radius=flet.border_radius.all(50))
         self.box_id = box_id
-        self.symbol = symbol
+        self.manager = manager
+        self.symbol = None
 
-        self.setSymbol()
+        self.on_click = self.setSymbol
 
     def setSymbol(self, e=None):
-        self.symbol = "O"
-        self.setIcon()
+        if not self.symbol:
+            self.symbol = self.manager.player
+            self.manager.player = "X" if self.symbol == "O" else "O"
+            self.setIcon()
+            self.manager.update()
 
     def setIcon(self):
-        if self.symbol == "X":
-            self.content = flet.Image(src="icons/TicTacToe/X.png",
+        if self.symbol in ("X", "O"):
+            self.content = flet.Image(src=f"icons/TicTacToe/{self.symbol}.png",
                                       fit=ImageFit.CONTAIN,
                                       repeat=flet.ImageRepeat.NO_REPEAT)
-        elif self.symbol == "O":
-            self.content = flet.Image(src="icons/TicTacToe/O.png",
-                                      fit=ImageFit.FIT_WIDTH,
-                                      repeat=flet.ImageRepeat.NO_REPEAT)
         elif self.symbol == None:
-            self.content.src = None
-
+            self.content = None
 
 class BoxRow(flet.Row):
 
-    def __init__(self, row: int, size: int):
+    def __init__(self, row: int, size: int, manager: flet.UserControl):
         super().__init__(expand=True,
                          alignment=MainAxisAlignment.CENTER,
                          vertical_alignment=CrossAxisAlignment.CENTER,
@@ -40,8 +41,7 @@ class BoxRow(flet.Row):
         self.size = size
 
         for i in range(size):
-            self.controls.append(Box(box_id=(i, row)))
-
+            self.controls.append(Box(box_id=(i, row), manager=manager))
 
 class TicTacToeInteractive(flet.UserControl):
 
@@ -50,22 +50,23 @@ class TicTacToeInteractive(flet.UserControl):
         self.size = size
         self.player = "X"
 
-        self.view = flet.Container(
-            expand=True,
-            padding=10,
-            bgcolor=flet.colors.PRIMARY_CONTAINER,
-            alignment=alignment.center,
-            border=flet.border.all(2, flet.colors.OUTLINE),
-            border_radius=flet.border_radius.all(50),
-            theme=flet.Theme(color_scheme_seed=flet.colors.INDIGO))
+        self.view = flet.Container(expand=True,
+                                   padding=10,
+                                   bgcolor="#99627A",
+                                   alignment=alignment.center,
+                                   border=flet.border.all(2, flet.colors.BLACK),
+                                   border_radius=flet.border_radius.all(50))
         self.inner_view = flet.Column(expand=True,
                                       spacing=20,
                                       alignment=MainAxisAlignment.CENTER,
                                       horizontal_alignment=CrossAxisAlignment.CENTER)
         self.playerDisplay = flet.Text(f"Player {self.player}'s Turn",
                                        style=flet.TextThemeStyle.TITLE_LARGE)
-        self.rows = [self.playerDisplay
-                    ] + [BoxRow(i, self.size) for i in range(self.size)]
+        self.rows = [self.playerDisplay] + [BoxRow(i, self.size, self) for i in range(self.size)]
+
+    def update(self):
+        self.playerDisplay.value = f"Player {self.player}'s Turn"
+        return super().update()
 
     def build(self):
         self.view.content = self.inner_view
@@ -75,28 +76,15 @@ class TicTacToeInteractive(flet.UserControl):
 
 def main(page: flet.Page):
     page.title = "Tic Tac Toe"
-    page.theme = flet.Theme(color_scheme_seed="indigo")
+    page.bgcolor = "#643843"
     page.theme_mode = flet.ThemeMode.LIGHT
     page.padding = 30
     page.vertical_alignment = MainAxisAlignment.CENTER
     page.horizontal_alignment = CrossAxisAlignment.CENTER
 
     interactive = TicTacToeInteractive(3)
-    page.add(flet.Text("Tic Tac Toe", style=flet.TextThemeStyle.DISPLAY_LARGE),
-             interactive)
-    interactive.update()
-    page.update()
-
-    # page.add(
-    #     flet.Container(content=flet.Column(
-    #         controls=rows,
-    #         alignment=MainAxisAlignment.SPACE_AROUND,
-    #         horizontal_alignment=CrossAxisAlignment.CENTER,
-    #         expand=True),
-    #                    expand=True,
-    #                    bgcolor=flet.colors.PRIMARY_CONTAINER,
-    #                    border=flet.border.all(2, flet.colors.OUTLINE),
-    #                    border_radius=flet.border_radius.all(50)))
+    page_title = flet.Text("TIC TAC TOE", style=flet.TextThemeStyle.DISPLAY_LARGE, color="#E7CBCB")
+    page.add(page_title, interactive)
 
 
 flet.app(target=main, assets_dir="assets")
