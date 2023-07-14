@@ -23,6 +23,11 @@ class TicTacToeInteractive(flet.UserControl):
                                        style=flet.TextThemeStyle.TITLE_LARGE)
         self.rows = [self.playerDisplay] + [BoxRow(i, self.size, self) for i in range(self.size)]
 
+    def reset(self, e):
+        for i in self.rows[1:]:
+            i.reset()
+        self.update()
+
     def update(self):
         self.playerDisplay.value = f"Player {self.player}'s Turn"
         return super().update()
@@ -63,6 +68,10 @@ class Box(flet.Container):
         elif self.symbol == None:
             self.content = None
 
+    def reset(self):
+        self.symbol = None
+        self.setIcon()
+
 
 class BoxRow(flet.Row):
 
@@ -77,16 +86,20 @@ class BoxRow(flet.Row):
         for i in range(size):
             self.controls.append(Box(box_id=(i, row), manager=manager))
 
+    def reset(self):
+        for i in self.controls:
+            i.reset()
+
 
 def main(page: flet.Page):
     page.title = "Tic Tac Toe"
     page.bgcolor = "#643843"
-    page.theme_mode = flet.ThemeMode.LIGHT
     page.padding = 30
     page.vertical_alignment = MainAxisAlignment.CENTER
     page.horizontal_alignment = CrossAxisAlignment.CENTER
 
     interactive = TicTacToeInteractive(3)
+    page.floating_action_button = flet.FloatingActionButton(icon=flet.icons.RESTART_ALT_OUTLINED, tooltip="Reset Match", on_click=interactive.reset)
     page_title = flet.Text("TIC TAC TOE", style=flet.TextThemeStyle.DISPLAY_LARGE, color="#E7CBCB")
     page.add(page_title, interactive)
 
