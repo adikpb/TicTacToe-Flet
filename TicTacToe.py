@@ -1,5 +1,7 @@
+from pprint import pprint
+
 import flet
-from flet import MainAxisAlignment, CrossAxisAlignment, alignment, ImageFit
+from flet import CrossAxisAlignment, ImageFit, MainAxisAlignment, alignment
 
 
 class TicTacToeInteractive(flet.UserControl):
@@ -8,6 +10,8 @@ class TicTacToeInteractive(flet.UserControl):
         super().__init__(expand=True)
         self.size = size
         self.player = "X"
+        self.game = [[None] * self.size for i in range(self.size)]
+        pprint(self.game)
 
         self.view = flet.Container(expand=True,
                                    padding=10,
@@ -47,7 +51,7 @@ class Box(flet.Container):
                          alignment=alignment.center,
                          border=flet.border.all(1, flet.colors.BLACK),
                          border_radius=flet.border_radius.all(50))
-        self.box_id = box_id
+        self.x, self.y = box_id
         self.manager = manager
         self.symbol = None
 
@@ -56,6 +60,8 @@ class Box(flet.Container):
     def setSymbol(self, e=None):
         if not self.symbol:
             self.symbol = self.manager.player
+            self.manager.game[self.y][self.x] = self.symbol
+            print(self.manager.game)
             self.manager.player = "X" if self.symbol == "O" else "O"
             self.setIcon()
             self.manager.update()
@@ -99,9 +105,12 @@ def main(page: flet.Page):
     page.horizontal_alignment = CrossAxisAlignment.CENTER
 
     interactive = TicTacToeInteractive(3)
-    page.floating_action_button = flet.FloatingActionButton(icon=flet.icons.RESTART_ALT_OUTLINED, tooltip="Reset Match", on_click=interactive.reset)
+    page.floating_action_button = flet.FloatingActionButton(icon=flet.icons.RESTART_ALT_OUTLINED,
+                                                            bgcolor="#fe7f9c"    ,
+                                                            tooltip="Reset Match",
+                                                            on_click=interactive.reset)
     page_title = flet.Text("TIC TAC TOE", style=flet.TextThemeStyle.DISPLAY_LARGE, color="#E7CBCB")
     page.add(page_title, interactive)
 
 
-flet.app(target=main, assets_dir="assets")
+flet.app(name="Tic Tac Toe", target=main, assets_dir="assets")
