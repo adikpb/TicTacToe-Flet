@@ -6,12 +6,14 @@ from flet import CrossAxisAlignment, ImageFit, MainAxisAlignment, alignment
 
 class TicTacToeInteractive(flet.UserControl):
 
-    def __init__(self, size: int = 3):
+    def __init__(self, page: flet.Page, size: int = 3):
         super().__init__(expand=True)
+        self.page = page
         self.size = size
         self.player = "X"
-        self.game = [[None] * self.size for i in range(self.size)]
-        pprint(self.game)
+        self.filled = 0
+        self.positions = [[None] * self.size for i in range(self.size)]
+        self.winMap = self.generateWinMap()
 
         self.view = flet.Container(expand=True,
                                    padding=10,
@@ -27,13 +29,71 @@ class TicTacToeInteractive(flet.UserControl):
                                        style=flet.TextThemeStyle.TITLE_LARGE)
         self.rows = [self.playerDisplay] + [BoxRow(i, self.size, self) for i in range(self.size)]
 
+    def generateWinMap(self):
+        row_wins = [[(x, y) for x in range(self.size)] for y in range(self.size)]
+        column_wins = [[(y, x) for x in range(self.size)] for y in range(self.size)]
+        diagonal_wins = [[(i, i) for i in range(self.size)]
+                        ] + [[(-(j - (self.size - 1)), j) for j in range(self.size)]]
+        win_combinations = row_wins + diagonal_wins + column_wins
+        pprint(win_combinations)
+
+        win_map = {}
+        for i in win_combinations:
+            for j in i:
+                if j not in win_map:
+                    win_map[j] = [i]
+                else:
+                    win_map[j].append(i)
+        pprint(win_map)
+        return win_map
+
     def reset(self, e):
+        self.page.floating_action_button = None
         for i in self.rows[1:]:
             i.reset()
+        self.player = "X"
+        self.positions = [[None] * self.size for i in range(self.size)]
+        self.filled = 0
         self.update()
 
+    def showWin(self):
+        self.page.dialog = flet.AlertDialog(
+            open=True,
+            title=flet.Text(f"Player {'X' if self.player == 'O' else 'O'} wins!"),
+            content=flet.Text("Do you want to reset the match?"),
+            actions=[
+                flet.TextButton("Yes", on_click=lambda e: self.reset(e) or self.closeDialog(e)),
+                flet.TextButton("No", on_click=self.closeDialog)
+            ])
+        self.page.update()
+
+    def showTie(self):
+        self.page.dialog = flet.AlertDialog(
+            open=True,
+            title=flet.Text("It's a tie!"),
+            content=flet.Text("Do you want to reset the match?"),
+            actions=[
+                flet.TextButton("Yes", on_click=lambda e: self.reset(e) or self.closeDialog(e)),
+                flet.TextButton("No", on_click=self.closeDialog)
+            ])
+        self.page.update()
+
+    def closeDialog(self, e):
+        self.page.dialog.open = False
+        self.page.update()
+
     def update(self):
+        if self.filled == 1:
+            self.page.floating_action_button = flet.FloatingActionButton(
+                icon=flet.icons.RESTART_ALT_OUTLINED,
+                bgcolor="#fe7f9c",
+                tooltip="Reset Match",
+                on_click=self.reset)
         self.playerDisplay.value = f"Player {self.player}'s Turn"
+        self.page.update()
+        if self.filled == self.size**2:
+            self.showTie()
+        print(self.filled)
         return super().update()
 
     def build(self):
@@ -51,7 +111,8 @@ class Box(flet.Container):
                          alignment=alignment.center,
                          border=flet.border.all(1, flet.colors.BLACK),
                          border_radius=flet.border_radius.all(50))
-        self.x, self.y = box_id
+        self.box_id = box_id
+        self.x, self.y = self.box_id
         self.manager = manager
         self.symbol = None
 
@@ -60,10 +121,14 @@ class Box(flet.Container):
     def setSymbol(self, e=None):
         if not self.symbol:
             self.symbol = self.manager.player
-            self.manager.game[self.y][self.x] = self.symbol
-            print(self.manager.game)
+            self.manager.positions[self.y][self.x] = self.symbol
             self.manager.player = "X" if self.symbol == "O" else "O"
             self.setIcon()
+            if self.checkWin():
+                self.manager.showWin()
+                self.manager.update()
+                return
+            self.manager.filled += 1
             self.manager.update()
 
     def setIcon(self):
@@ -73,6 +138,11 @@ class Box(flet.Container):
                                       repeat=flet.ImageRepeat.NO_REPEAT)
         elif self.symbol == None:
             self.content = None
+
+    def checkWin(self):
+        for i in self.manager.winMap[self.box_id]:
+            if all(map(lambda i: self.manager.positions[i[1]][i[0]] == self.symbol, i)):
+                return True
 
     def reset(self):
         self.symbol = None
@@ -104,11 +174,7 @@ def main(page: flet.Page):
     page.vertical_alignment = MainAxisAlignment.CENTER
     page.horizontal_alignment = CrossAxisAlignment.CENTER
 
-    interactive = TicTacToeInteractive(3)
-    page.floating_action_button = flet.FloatingActionButton(icon=flet.icons.RESTART_ALT_OUTLINED,
-                                                            bgcolor="#fe7f9c"    ,
-                                                            tooltip="Reset Match",
-                                                            on_click=interactive.reset)
+    interactive = TicTacToeInteractive(page=page, size=3)
     page_title = flet.Text("TIC TAC TOE", style=flet.TextThemeStyle.DISPLAY_LARGE, color="#E7CBCB")
     page.add(page_title, interactive)
 
