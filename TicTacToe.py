@@ -1,7 +1,29 @@
-from pprint import pprint
-
 import flet
 from flet import CrossAxisAlignment, ImageFit, MainAxisAlignment, alignment
+
+
+class SizeSelector(flet.Slider):
+
+    def __init__(self, page: flet.Page, switcher: flet.AnimatedSwitcher):
+        super().__init__(divisions=2,
+                         label="{value}x{value}",
+                         max=5,
+                         min=3,
+                         value=3,
+                         on_change=self.changeSize,
+                         active_color="#fe7f9c",
+                         thumb_color="#fe7f9c")
+        self.page = page
+        self.switcher = switcher
+        self.sizes = {3: None, 4: None, 5: None}
+        for i in self.sizes:
+            self.sizes[i] = TicTacToeInteractive(page=self.page, size=i)
+        self.switcher.content = self.sizes[3]
+
+    def changeSize(self, e):
+        self.switcher.content = self.sizes[self.value]
+        self.page.floating_action_button = self.switcher.content.resetButton
+        self.page.update()
 
 
 class TicTacToeInteractive(flet.UserControl):
@@ -28,6 +50,7 @@ class TicTacToeInteractive(flet.UserControl):
         self.playerDisplay = flet.Text(f"Player {self.player}'s Turn",
                                        style=flet.TextThemeStyle.TITLE_LARGE)
         self.rows = [self.playerDisplay] + [BoxRow(i, self.size, self) for i in range(self.size)]
+        self.resetButton = None
 
     def generateWinMap(self):
         row_wins = [[(x, y) for x in range(self.size)] for y in range(self.size)]
@@ -35,7 +58,6 @@ class TicTacToeInteractive(flet.UserControl):
         diagonal_wins = [[(i, i) for i in range(self.size)]
                         ] + [[(-(j - (self.size - 1)), j) for j in range(self.size)]]
         win_combinations = row_wins + diagonal_wins + column_wins
-        pprint(win_combinations)
 
         win_map = {}
         for i in win_combinations:
@@ -44,11 +66,10 @@ class TicTacToeInteractive(flet.UserControl):
                     win_map[j] = [i]
                 else:
                     win_map[j].append(i)
-        pprint(win_map)
         return win_map
 
     def reset(self, e):
-        self.page.floating_action_button = None
+        self.page.floating_action_button = self.resetButton = None
         for i in self.rows[1:]:
             i.reset()
         self.player = "X"
@@ -59,7 +80,7 @@ class TicTacToeInteractive(flet.UserControl):
     def showWin(self):
         self.page.dialog = flet.AlertDialog(
             open=True,
-            title=flet.Text(f"Player {'X' if self.player == 'O' else 'O'} wins!"),
+            title=flet.Text(f"Player {'X' if self.player == 'O' else 'O'} Wins!"),
             content=flet.Text("Do you want to reset the match?"),
             actions=[
                 flet.TextButton("Yes", on_click=lambda e: self.reset(e) or self.closeDialog(e)),
@@ -70,7 +91,7 @@ class TicTacToeInteractive(flet.UserControl):
     def showTie(self):
         self.page.dialog = flet.AlertDialog(
             open=True,
-            title=flet.Text("It's a tie!"),
+            title=flet.Text("It's a Tie!"),
             content=flet.Text("Do you want to reset the match?"),
             actions=[
                 flet.TextButton("Yes", on_click=lambda e: self.reset(e) or self.closeDialog(e)),
@@ -84,22 +105,39 @@ class TicTacToeInteractive(flet.UserControl):
 
     def update(self):
         if self.filled == 1:
-            self.page.floating_action_button = flet.FloatingActionButton(
-                icon=flet.icons.RESTART_ALT_OUTLINED,
-                bgcolor="#fe7f9c",
-                tooltip="Reset Match",
-                on_click=self.reset)
+            self.resetButton = flet.FloatingActionButton(icon=flet.icons.RESTART_ALT_OUTLINED,
+                                                         bgcolor="#fe7f9c",
+                                                         tooltip="Reset Match",
+                                                         on_click=self.reset)
+            self.page.floating_action_button = self.resetButton
         self.playerDisplay.value = f"Player {self.player}'s Turn"
         self.page.update()
         if self.filled == self.size**2:
             self.showTie()
-        print(self.filled)
         return super().update()
 
     def build(self):
         self.view.content = self.inner_view
         self.inner_view.controls = self.rows
         return self.view
+
+
+class BoxRow(flet.Row):
+
+    def __init__(self, row: int, size: int, manager: TicTacToeInteractive):
+        super().__init__(expand=True,
+                         alignment=MainAxisAlignment.CENTER,
+                         vertical_alignment=CrossAxisAlignment.CENTER,
+                         spacing=10)
+        self.row = row
+        self.size = size
+
+        for i in range(size):
+            self.controls.append(Box(box_id=(i, row), manager=manager))
+
+    def reset(self):
+        for i in self.controls:
+            i.reset()
 
 
 class Box(flet.Container):
@@ -149,34 +187,26 @@ class Box(flet.Container):
         self.setIcon()
 
 
-class BoxRow(flet.Row):
-
-    def __init__(self, row: int, size: int, manager: TicTacToeInteractive):
-        super().__init__(expand=True,
-                         alignment=MainAxisAlignment.CENTER,
-                         vertical_alignment=CrossAxisAlignment.CENTER,
-                         spacing=10)
-        self.row = row
-        self.size = size
-
-        for i in range(size):
-            self.controls.append(Box(box_id=(i, row), manager=manager))
-
-    def reset(self):
-        for i in self.controls:
-            i.reset()
-
-
 def main(page: flet.Page):
     page.title = "Tic Tac Toe"
     page.bgcolor = "#643843"
+    page.theme_mode = flet.ThemeMode.DARK
     page.padding = 30
     page.vertical_alignment = MainAxisAlignment.CENTER
     page.horizontal_alignment = CrossAxisAlignment.CENTER
 
-    interactive = TicTacToeInteractive(page=page, size=3)
-    page_title = flet.Text("TIC TAC TOE", style=flet.TextThemeStyle.DISPLAY_LARGE, color="#E7CBCB")
-    page.add(page_title, interactive)
+    switcher = flet.AnimatedSwitcher(expand=True)
+    options = flet.PopupMenuButton(items=[
+        flet.PopupMenuItem(content=flet.Column(
+            controls=[flet.Text("Grid Size"),
+                      SizeSelector(page=page, switcher=switcher)]))
+    ])
+    page.appbar = flet.AppBar(leading=flet.Icon(flet.icons.SHIELD_MOON_SHARP),
+                              title=flet.Text("TIC TAC TOE"),
+                              color="#E7CBCB",
+                              bgcolor="#99627A",
+                              actions=[options])
+    page.add(switcher)
 
 
 flet.app(name="Tic Tac Toe", target=main, assets_dir="assets")
