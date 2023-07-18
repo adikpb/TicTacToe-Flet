@@ -1,5 +1,4 @@
 import flet
-from flet import CrossAxisAlignment, ImageFit, MainAxisAlignment, alignment
 
 
 class SizeSelector(flet.Slider):
@@ -40,13 +39,13 @@ class TicTacToeInteractive(flet.UserControl):
         self.view = flet.Container(expand=True,
                                    padding=10,
                                    bgcolor="#99627A",
-                                   alignment=alignment.center,
+                                   alignment=flet.alignment.center,
                                    border=flet.border.all(2, flet.colors.BLACK),
                                    border_radius=flet.border_radius.all(50))
         self.inner_view = flet.Column(expand=True,
                                       spacing=20,
-                                      alignment=MainAxisAlignment.CENTER,
-                                      horizontal_alignment=CrossAxisAlignment.CENTER)
+                                      alignment=flet.MainAxisAlignment.CENTER,
+                                      horizontal_alignment=flet.CrossAxisAlignment.CENTER)
         self.playerDisplay = flet.Text(f"Player {self.player}'s Turn",
                                        style=flet.TextThemeStyle.TITLE_LARGE)
         self.rows = [self.playerDisplay] + [BoxRow(i, self.size, self) for i in range(self.size)]
@@ -126,8 +125,8 @@ class BoxRow(flet.Row):
 
     def __init__(self, row: int, size: int, manager: TicTacToeInteractive):
         super().__init__(expand=True,
-                         alignment=MainAxisAlignment.CENTER,
-                         vertical_alignment=CrossAxisAlignment.CENTER,
+                         alignment=flet.MainAxisAlignment.CENTER,
+                         vertical_alignment=flet.CrossAxisAlignment.CENTER,
                          spacing=10)
         self.row = row
         self.size = size
@@ -146,20 +145,26 @@ class Box(flet.Container):
         super().__init__(expand=True,
                          bgcolor="#C88EA7",
                          padding=5,
-                         alignment=alignment.center,
+                         alignment=flet.alignment.center,
                          border=flet.border.all(1, flet.colors.BLACK),
-                         border_radius=flet.border_radius.all(50))
+                         shape=flet.BoxShape.CIRCLE,
+                         on_click=self.setSymbol)
         self.box_id = box_id
-        self.x, self.y = self.box_id
         self.manager = manager
         self.symbol = None
-
-        self.on_click = self.setSymbol
+        self.x = flet.Image(src="icons/TicTacToe/X.png",
+                            fit=flet.ImageFit.CONTAIN,
+                            repeat=flet.ImageRepeat.NO_REPEAT)
+        self.o = flet.Image(src="icons/TicTacToe/O.png",
+                            fit=flet.ImageFit.CONTAIN,
+                            repeat=flet.ImageRepeat.NO_REPEAT)
+        self.content = flet.AnimatedSwitcher(expand=True, duration=250)
+        self.setIcon()
 
     def setSymbol(self, e=None):
         if not self.symbol:
             self.symbol = self.manager.player
-            self.manager.positions[self.y][self.x] = self.symbol
+            self.manager.positions[self.box_id[1]][self.box_id[0]] = self.symbol
             self.manager.player = "X" if self.symbol == "O" else "O"
             self.setIcon()
             if self.checkWin():
@@ -170,12 +175,12 @@ class Box(flet.Container):
             self.manager.update()
 
     def setIcon(self):
-        if self.symbol in ("X", "O"):
-            self.content = flet.Image(src=f"icons/TicTacToe/{self.symbol}.png",
-                                      fit=ImageFit.CONTAIN,
-                                      repeat=flet.ImageRepeat.NO_REPEAT)
-        elif self.symbol == None:
-            self.content = None
+        if self.symbol == "X":
+            self.content.content = self.x
+        elif self.symbol == "O":
+            self.content.content = self.o
+        else:
+            self.content.content = flet.Text()
 
     def checkWin(self):
         for i in self.manager.winMap[self.box_id]:
@@ -192,10 +197,10 @@ def main(page: flet.Page):
     page.bgcolor = "#643843"
     page.theme_mode = flet.ThemeMode.DARK
     page.padding = 30
-    page.vertical_alignment = MainAxisAlignment.CENTER
-    page.horizontal_alignment = CrossAxisAlignment.CENTER
+    page.vertical_alignment = flet.MainAxisAlignment.CENTER
+    page.horizontal_alignment = flet.CrossAxisAlignment.CENTER
 
-    switcher = flet.AnimatedSwitcher(expand=True)
+    switcher = flet.AnimatedSwitcher(expand=True, duration=250)
     options = flet.PopupMenuButton(items=[
         flet.PopupMenuItem(content=flet.Column(
             controls=[flet.Text("Grid Size"),
