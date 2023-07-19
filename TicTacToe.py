@@ -14,7 +14,7 @@ class SizeSelector(flet.Slider):
                          thumb_color="#FE7F9C")
         self.page = page
         self.slide_in = slide_in
-        self.grids = {i: None for i in range(min_size, max_size+1)}
+        self.grids = {i: None for i in range(min_size, max_size + 1)}
         self.currentSize = min_size
         for i in self.grids:
             self.grids[i] = TicTacToeInteractive(page=self.page, size=i)
@@ -223,7 +223,12 @@ def main(page: flet.Page):
                               title=flet.Text("TIC TAC TOE"),
                               color="#E7CBCB",
                               bgcolor="#99627A",
-                              actions=[options])
+                              actions=[
+                                  flet.IconButton(icon=flet.icons.HOME,
+                                                  url="https://github.com/adikpb/TicTacToe-Flet",
+                                                  tooltip="github.com/adikpb/TicTacToe-Flet"),
+                                  options
+                              ])
     page.add(slide_in)
 
 
