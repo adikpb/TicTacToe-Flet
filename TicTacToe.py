@@ -3,32 +3,45 @@ import flet
 
 class SizeSelector(flet.Slider):
 
-    def __init__(self, page: flet.Page, switcher: flet.AnimatedSwitcher):
-        super().__init__(divisions=2,
-                         label="{value}x{value}",
-                         max=5,
-                         min=3,
+    def __init__(self, page: flet.Page, slide_in: flet.Stack, min_size: int = 3, max_size: int = 5):
+        super().__init__(divisions=max_size - min_size,
+                         label="{value} x {value}",
+                         max=max_size,
+                         min=min_size,
                          value=3,
-                         on_change=self.changeSize,
-                         active_color="#fe7f9c",
-                         thumb_color="#fe7f9c")
+                         on_change=self.changeGridSize,
+                         active_color="#FE7F9C",
+                         thumb_color="#FE7F9C")
         self.page = page
-        self.switcher = switcher
-        self.sizes = {3: None, 4: None, 5: None}
-        for i in self.sizes:
-            self.sizes[i] = TicTacToeInteractive(page=self.page, size=i)
-        self.switcher.content = self.sizes[3]
+        self.slide_in = slide_in
+        self.grids = {i: None for i in range(min_size, max_size+1)}
+        self.currentSize = min_size
+        for i in self.grids:
+            self.grids[i] = TicTacToeInteractive(page=self.page, size=i)
+            self.slide_in.controls.append(self.grids[i])
+            if i != self.currentSize:
+                self.grids[i].offset = flet.transform.Offset(1.25, 0)
+            else:
+                self.grids[i].offset = flet.transform.Offset(0, 0)
 
-    def changeSize(self, e):
-        self.switcher.content = self.sizes[self.value]
-        self.page.floating_action_button = self.switcher.content.resetButton
+    def changeGridSize(self, e):
+        if self.currentSize < self.value:
+            self.grids[self.currentSize].offset = flet.transform.Offset(-1.25, 0)
+            self.grids[self.value].offset = flet.transform.Offset(0, 0)
+        elif self.currentSize > self.value:
+            self.grids[self.currentSize].offset = flet.transform.Offset(1.25, 0)
+            self.grids[self.value].offset = flet.transform.Offset(0, 0)
+        self.currentSize = self.value
+        self.page.floating_action_button = self.grids[self.value].resetButton
         self.page.update()
 
 
 class TicTacToeInteractive(flet.UserControl):
 
     def __init__(self, page: flet.Page, size: int = 3):
-        super().__init__(expand=True)
+        super().__init__(expand=True,
+                         animate_offset=flet.animation.Animation(
+                             duration=1500, curve=flet.animation.AnimationCurve.ELASTIC_OUT))
         self.page = page
         self.size = size
         self.player = "X"
@@ -105,7 +118,7 @@ class TicTacToeInteractive(flet.UserControl):
     def update(self):
         if self.filled == 1:
             self.resetButton = flet.FloatingActionButton(icon=flet.icons.RESTART_ALT_OUTLINED,
-                                                         bgcolor="#fe7f9c",
+                                                         bgcolor="#FE7F9C",
                                                          tooltip="Reset Match",
                                                          on_click=self.reset)
             self.page.floating_action_button = self.resetButton
@@ -200,18 +213,18 @@ def main(page: flet.Page):
     page.vertical_alignment = flet.MainAxisAlignment.CENTER
     page.horizontal_alignment = flet.CrossAxisAlignment.CENTER
 
-    switcher = flet.AnimatedSwitcher(expand=True, duration=250)
+    slide_in = flet.Stack(expand=True)
     options = flet.PopupMenuButton(items=[
         flet.PopupMenuItem(content=flet.Column(
             controls=[flet.Text("Grid Size"),
-                      SizeSelector(page=page, switcher=switcher)]))
+                      SizeSelector(page=page, slide_in=slide_in)]))
     ])
     page.appbar = flet.AppBar(leading=flet.Icon(flet.icons.SHIELD_MOON_SHARP),
                               title=flet.Text("TIC TAC TOE"),
                               color="#E7CBCB",
                               bgcolor="#99627A",
                               actions=[options])
-    page.add(switcher)
+    page.add(slide_in)
 
 
 flet.app(name="Tic Tac Toe", target=main, assets_dir="assets")
