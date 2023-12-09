@@ -71,6 +71,8 @@ class TicTacToe(flet.UserControl):
         if self.checkWin(box) and not self.end:
             self.end = True
             await self.showWin()
+        elif self.filled == self.size**2:
+            await self.showTie()
         await self.update_async()
 
     async def botPlay(self):
@@ -145,8 +147,6 @@ class TicTacToe(flet.UserControl):
         else:
             self.playerDisplay.value = f"Player {self.current}'s Turn"
         await self.outer_control.update_async()
-        if self.filled == self.size**2:
-            await self.showTie()
         return await super().update_async()
 
     def build(self):
@@ -237,7 +237,7 @@ class Box(flet.Container):
         self.setIcon()
 
     async def setSymbol(self, e=None):
-        if not self.symbol:
+        if (bool(e) != (self.manager.current == self.manager.bot)) and not self.symbol:
             await self.manager.setSymbol(self)
 
     def setIcon(self):
