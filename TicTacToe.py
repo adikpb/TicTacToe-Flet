@@ -61,7 +61,6 @@ class TicTacToe(flet.UserControl):
     async def setSymbol(self, box):
         box.symbol = self.current
         self.positions[box.box_id[1]][box.box_id[0]] = box.symbol
-        print(self.positions)
         if self.botted:
             self.indexes.remove(box.box_id)
         self.current = "X" if box.symbol == "O" else "O"
@@ -76,7 +75,7 @@ class TicTacToe(flet.UserControl):
         await self.update_async()
 
     async def botPlay(self):
-        if self.indexes:
+        if self.indexes and not self.end:
             await sleep(0.75)
             play = choice(self.indexes)
             print(play)
