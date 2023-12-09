@@ -1,3 +1,4 @@
+from pprint import pprint
 from random import choice
 from time import sleep
 
@@ -15,6 +16,7 @@ class TicTacToe(flet.UserControl):
         self.botted = botted
         self.current = "X"
         self.filled = 0
+        self.end = False
         self.positions = [[None] * self.size for i in range(self.size)]
         self.winMap = self.generateWinMap()
         if botted:
@@ -52,20 +54,23 @@ class TicTacToe(flet.UserControl):
                     win_map[j] = [i]
                 else:
                     win_map[j].append(i)
+        print(f"\n{self.size}x{self.size}\n")
+        pprint(win_map)
         return win_map
 
     def setSymbol(self, box):
         box.symbol = self.current
         self.positions[box.box_id[1]][box.box_id[0]] = box.symbol
+        print(self.positions)
         if self.botted:
             self.indexes.remove(box.box_id)
         self.current = "X" if box.symbol == "O" else "O"
         box.setIcon()
-        if box.checkWin():
-            self.showWin()
-            self.update()
-            return
         self.filled += 1
+        
+        if self.checkWin(box) and not self.end:
+            self.end = True
+            self.showWin()
         self.update()
 
     def botPlay(self):
@@ -82,9 +87,16 @@ class TicTacToe(flet.UserControl):
         self.current = "X"
         self.positions = [[None] * self.size for i in range(self.size)]
         self.filled = 0
-        self.indexes = [(i, j) for i in range(self.size) for j in range(self.size)]
+        self.end = False
+        if self.botted:
+            self.indexes = [(i, j) for i in range(self.size) for j in range(self.size)]
         self.update()
         self.view.update()
+
+    def checkWin(self, box):
+        for i in self.winMap[box.box_id]:
+            if all(map(lambda j: self.positions[j[1]][j[0]] == box.symbol, i)):
+                return True
 
     def showWin(self):
         if self.botted:
@@ -223,7 +235,7 @@ class Box(flet.Container):
         self.content = flet.AnimatedSwitcher(expand=True, duration=250)
         self.setIcon()
 
-    def setSymbol(self, e=None):
+    def setSymbol(self, e):
         if not self.symbol:
             self.manager.setSymbol(self)
 
@@ -234,11 +246,6 @@ class Box(flet.Container):
             self.content.content = self.o
         else:
             self.content.content = flet.Text()
-
-    def checkWin(self):
-        for i in self.manager.winMap[self.box_id]:
-            if all(map(lambda i: self.manager.positions[i[1]][i[0]] == self.symbol, i)):
-                return True
 
     def reset(self):
         self.symbol = None
