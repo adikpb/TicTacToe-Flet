@@ -237,7 +237,7 @@ class Box(flet.Container):
         self.setIcon()
 
     async def setSymbol(self, e=None):
-        if (bool(e) != (self.manager.current == self.manager.bot)) and not self.symbol:
+        if (bool(e) != (self.manager.current == self.manager.bot) if self.manager.botted else True) and not self.symbol:
             await self.manager.setSymbol(self)
 
     def setIcon(self):
