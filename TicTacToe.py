@@ -1,8 +1,66 @@
+from asyncio import sleep
 from pprint import pprint
 from random import choice
-from asyncio import sleep
+from typing import Literal
 
 import flet
+
+
+class game:
+    def __init__(self, size: int, bot: Literal["X", "O"] = None):
+        self.size = size
+        self.current = "X"
+        self.player = "X" if bot == "O" else "O"
+        self.bot = bot
+        self.gameState = [[None] * self.size for i in range(self.size)]
+        self.filled = 0
+        self.lastPlay = None
+        self.winMap = self.generateWinMap()
+
+    def display(self):
+        pprint(self.gameState, width=50)
+
+    def generateWinMap(self):
+        row_wins = [[(y, x) for x in range(self.size)] for y in range(self.size)]
+        column_wins = [[(y, x) for y in range(self.size)] for x in range(self.size)]
+        diagonal_wins = [[(i, i) for i in range(self.size)]] + [
+            [(j, -(j - (self.size - 1))) for j in range(self.size)]
+        ]
+        win_combinations = row_wins + diagonal_wins + column_wins
+
+        win_map = {}
+        for i in win_combinations:
+            for j in i:
+                if j not in win_map:
+                    win_map[j] = [i]
+                else:
+                    win_map[j].append(i)
+        pprint(win_map)
+        return win_map
+
+    def setSymbol(self, x: int, y: int, symbol: str = None):
+        self.filled += 1
+        self.gameState[y][x] = symbol if symbol else self.current
+        self.current = "X" if (symbol == "O" or self.current == "O") else "O"
+        pprint(self.gameState)
+
+    def checkWin(self, x: int, y: int, symbol: Literal["X", "O"]):
+        for i in self.winMap[(y, x)]:
+            # winMap = {(0, 0): 'row' [[(0, 0), (0, 1), (0, 2)], 'column' [(0, 0), (1, 1), (2, 2)], 'diagonal' [(0, 0), (1, 0), (2, 0)]] ... }
+            if all(map(lambda j: self.gameState[j[0]][j[1]] == symbol, i)):
+                print(True)
+                return True
+        print(False)
+        return False
+
+    def checkTie(self):
+        if self.filled == self.size**2:
+            return True
+        return False
+
+    def reset(self):
+        self.gameState = [[None] * self.size for i in range(self.size)]
+        self.filled = 0
 
 
 class TicTacToe(flet.UserControl):
@@ -15,15 +73,13 @@ class TicTacToe(flet.UserControl):
         )
         self.view = view
         self.size = size
+        self.game = game(size=self.size)
         self.botted = botted
         self.current = "X"
-        self.filled = 0
         self.end = False
-        self.positions = [[None] * self.size for i in range(self.size)]
-        self.winMap = self.generateWinMap()
         if botted:
-            self.player = "X"
-            self.bot = "O"
+            self.game.bot = "O"
+            self.game.player = "X"
             self.indexes = [(i, j) for i in range(self.size) for j in range(self.size)]
 
         self.outer_control = flet.Container(
@@ -50,39 +106,20 @@ class TicTacToe(flet.UserControl):
         ]
         self.resetButton = None
 
-    def generateWinMap(self):
-        row_wins = [[(x, y) for x in range(self.size)] for y in range(self.size)]
-        column_wins = [[(y, x) for x in range(self.size)] for y in range(self.size)]
-        diagonal_wins = [[(i, i) for i in range(self.size)]] + [
-            [(-(j - (self.size - 1)), j) for j in range(self.size)]
-        ]
-        win_combinations = row_wins + diagonal_wins + column_wins
-
-        win_map = {}
-        for i in win_combinations:
-            for j in i:
-                if j not in win_map:
-                    win_map[j] = [i]
-                else:
-                    win_map[j].append(i)
-        print(f"\n{self.size}x{self.size}\n")
-        pprint(win_map)
-        return win_map
-
     async def setSymbol(self, box):
         box.symbol = self.current
-        self.positions[box.box_id[1]][box.box_id[0]] = box.symbol
+        self.game.setSymbol(x=box.box_id[1], y=box.box_id[0], symbol=self.current)
         if self.botted:
             self.indexes.remove(box.box_id)
         self.current = "X" if box.symbol == "O" else "O"
         box.setIcon()
-        self.filled += 1
 
-        if self.checkWin(box) and not self.end:
-            self.end = True
-            await self.showWin()
-        elif self.filled == self.size**2 and not self.end:
-            await self.showTie()
+        if not self.end:
+            if self.game.checkWin(x=box.box_id[1], y=box.box_id[0], symbol=box.symbol):
+                await self.showWin()
+                self.end = True
+            elif self.game.checkTie():
+                await self.showTie()
         await self.update_async()
 
     async def botPlay(self):
@@ -90,15 +127,14 @@ class TicTacToe(flet.UserControl):
             await sleep(0.75)
             play = choice(self.indexes)
             print(play)
-            await self.inner_control.controls[play[1] + 1].controls[play[0]].setSymbol()
+            await self.inner_control.controls[play[0] + 1].controls[play[1]].setSymbol()
 
     async def reset(self, e):
         self.view.floating_action_button = self.resetButton = None
         for i in self.rows[1:]:
             i.reset()
         self.current = "X"
-        self.positions = [[None] * self.size for i in range(self.size)]
-        self.filled = 0
+        self.game.reset()
         self.end = False
         if self.botted:
             self.indexes = [(i, j) for i in range(self.size) for j in range(self.size)]
@@ -106,14 +142,12 @@ class TicTacToe(flet.UserControl):
         await self.update_async()
         await self.view.update_async()
 
-    def checkWin(self, box):
-        for i in self.winMap[box.box_id]:
-            if all(map(lambda j: self.positions[j[1]][j[0]] == box.symbol, i)):
-                return True
-
     async def showWin(self):
+        print("Won")
         if self.botted:
-            text = "👤 Player wins!" if self.current != self.player else "🤖 Bot wins!"
+            text = (
+                "👤 Player wins!" if self.current != self.game.player else "🤖 Bot wins!"
+            )
         else:
             text = f"Player {'X' if self.current == 'O' else 'O'} Wins!"
         self.view.page.dialog = flet.AlertDialog(
@@ -140,11 +174,12 @@ class TicTacToe(flet.UserControl):
         await self.view.page.update_async()
 
     async def closeDialog(self, e=None):
-        self.view.page.dialog.open = False
-        await self.view.page.update_async()
+        if self.view.page.dialog:
+            self.view.page.dialog.open = False
+            await self.view.page.update_async()
 
     async def update_async(self):
-        if self.filled == 1:
+        if self.game.filled == 1:
             self.resetButton = flet.FloatingActionButton(
                 icon=flet.icons.RESTART_ALT_OUTLINED,
                 bgcolor="#FE7F9C",
@@ -155,10 +190,10 @@ class TicTacToe(flet.UserControl):
             await self.view.page.update_async()
         if self.botted:
             self.playerDisplay.value = (
-                "👤's Turn" if self.current == self.player else "🤖's Turn"
+                "👤's Turn" if self.current == self.game.player else "🤖's Turn"
             )
             await self.outer_control.update_async()
-            if self.current == self.bot:
+            if self.current == self.game.bot:
                 await self.botPlay()
         else:
             self.playerDisplay.value = f"Player {self.current}'s Turn"
@@ -227,7 +262,7 @@ class BoxRow(flet.Row):
         self.size = size
 
         for i in range(size):
-            self.controls.append(Box(box_id=(i, row), manager=manager))
+            self.controls.append(Box(box_id=(row, i), manager=manager))
 
     def reset(self):
         for i in self.controls:
@@ -263,7 +298,7 @@ class Box(flet.Container):
 
     async def setSymbol(self, e=None):
         if (
-            bool(e) != (self.manager.current == self.manager.bot)
+            bool(e) != (self.manager.current == self.manager.game.bot)
             if self.manager.botted
             else True
         ) and not self.symbol:
@@ -445,6 +480,4 @@ async def main(page: flet.Page):
     await page.go_async(page.route)
 
 
-flet.app(
-    name="Tic Tac Toe", target=main, assets_dir="assets", view=flet.AppView.WEB_BROWSER
-)
+flet.app(name="Tic Tac Toe", target=main, assets_dir="assets")
