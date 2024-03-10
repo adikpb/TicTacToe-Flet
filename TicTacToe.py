@@ -42,15 +42,13 @@ class game:
         self.filled += 1
         self.gameState[y][x] = symbol if symbol else self.current
         self.current = "X" if (symbol == "O" or self.current == "O") else "O"
-        pprint(self.gameState)
+        self.display()
 
     def checkWin(self, x: int, y: int, symbol: Literal["X", "O"]):
         for i in self.winMap[(y, x)]:
             # winMap = {(0, 0): 'row' [[(0, 0), (0, 1), (0, 2)], 'column' [(0, 0), (1, 1), (2, 2)], 'diagonal' [(0, 0), (1, 0), (2, 0)]] ... }
             if all(map(lambda j: self.gameState[j[0]][j[1]] == symbol, i)):
-                print(True)
                 return True
-        print(False)
         return False
 
     def checkTie(self):
@@ -114,7 +112,7 @@ class TicTacToe(flet.UserControl):
         self.current = "X" if box.symbol == "O" else "O"
         box.setIcon()
 
-        if not self.end:
+        if not self.end and self.game.filled >= 2 * self.size - 1:
             if self.game.checkWin(x=box.box_id[1], y=box.box_id[0], symbol=box.symbol):
                 await self.showWin()
                 self.end = True
@@ -126,7 +124,6 @@ class TicTacToe(flet.UserControl):
         if self.indexes and not self.end:
             await sleep(0.75)
             play = choice(self.indexes)
-            print(play)
             await self.inner_control.controls[play[0] + 1].controls[play[1]].setSymbol()
 
     async def reset(self, e):
@@ -143,7 +140,6 @@ class TicTacToe(flet.UserControl):
         await self.view.update_async()
 
     async def showWin(self):
-        print("Won")
         if self.botted:
             text = (
                 "👤 Player wins!" if self.current != self.game.player else "🤖 Bot wins!"
