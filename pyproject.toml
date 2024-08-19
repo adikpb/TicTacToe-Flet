@@ -6,7 +6,7 @@ authors = ["adikpb <67222969+adikpb@users.noreply.github.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.8,<=3.11.5"
 flet = "^0.21.1"
 
 
