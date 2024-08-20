@@ -104,7 +104,7 @@ class TicTacToe(flet.UserControl):
         ]
         self.resetButton = None
 
-    async def setSymbol(self, box):
+    def setSymbol(self, box):
         box.symbol = self.current
         self.game.setSymbol(x=box.box_id[1], y=box.box_id[0], symbol=self.current)
         if self.botted:
@@ -114,19 +114,19 @@ class TicTacToe(flet.UserControl):
 
         if not self.end and self.game.filled >= 2 * self.size - 1:
             if self.game.checkWin(x=box.box_id[1], y=box.box_id[0], symbol=box.symbol):
-                await self.showWin()
+                self.showWin()
                 self.end = True
             elif self.game.checkTie():
-                await self.showTie()
-        await self.update_async()
+                self.showTie()
+        self.update()
 
-    async def botPlay(self):
+    def botPlay(self):
         if self.indexes and not self.end:
-            await sleep(0.75)
+            sleep(0.75)
             play = choice(self.indexes)
-            await self.inner_control.controls[play[0] + 1].controls[play[1]].setSymbol()
+            self.inner_control.controls[play[0] + 1].controls[play[1]].setSymbol()
 
-    async def reset(self, e):
+    def reset(self, e):
         self.view.floating_action_button = self.resetButton = None
         for i in self.rows[1:]:
             i.reset()
@@ -135,14 +135,16 @@ class TicTacToe(flet.UserControl):
         self.end = False
         if self.botted:
             self.indexes = [(i, j) for i in range(self.size) for j in range(self.size)]
-        await self.closeDialog()
-        await self.update_async()
-        await self.view.update_async()
+        self.closeDialog()
+        self.update()
+        self.view.update()
 
-    async def showWin(self):
+    def showWin(self):
         if self.botted:
             text = (
-                "👤 Player wins!" if self.current != self.game.player else "🤖 Bot wins!"
+                "👤 Player wins!"
+                if self.current != self.game.player
+                else "🤖 Bot wins!"
             )
         else:
             text = f"Player {'X' if self.current == 'O' else 'O'} Wins!"
@@ -155,9 +157,9 @@ class TicTacToe(flet.UserControl):
                 flet.TextButton("No", on_click=self.closeDialog),
             ],
         )
-        await self.view.page.update_async()
+        self.view.page.update()
 
-    async def showTie(self):
+    def showTie(self):
         self.view.page.dialog = flet.AlertDialog(
             open=True,
             title=flet.Text("It's a Tie!"),
@@ -167,14 +169,14 @@ class TicTacToe(flet.UserControl):
                 flet.TextButton("No", on_click=self.closeDialog),
             ],
         )
-        await self.view.page.update_async()
+        self.view.page.update()
 
-    async def closeDialog(self, e=None):
+    def closeDialog(self, e=None):
         if self.view.page.dialog:
             self.view.page.dialog.open = False
-            await self.view.page.update_async()
+            self.view.page.update()
 
-    async def update_async(self):
+    def update(self):
         if self.game.filled == 1:
             self.resetButton = flet.FloatingActionButton(
                 icon=flet.icons.RESTART_ALT_OUTLINED,
@@ -183,18 +185,18 @@ class TicTacToe(flet.UserControl):
                 on_click=self.reset,
             )
             self.view.floating_action_button = self.resetButton
-            await self.view.page.update_async()
+            self.view.page.update()
         if self.botted:
             self.playerDisplay.value = (
                 "👤's Turn" if self.current == self.game.player else "🤖's Turn"
             )
-            await self.outer_control.update_async()
+            self.outer_control.update()
             if self.current == self.game.bot:
-                await self.botPlay()
+                self.botPlay()
         else:
             self.playerDisplay.value = f"Player {self.current}'s Turn"
-        await self.outer_control.update_async()
-        return await super().update_async()
+        self.outer_control.update()
+        return super().update()
 
     def build(self):
         self.outer_control.content = self.inner_control
@@ -234,7 +236,7 @@ class SizeSelector(flet.Slider):
             else:
                 self.grids[i].offset = flet.transform.Offset(0, 0)
 
-    async def changeGridSize(self, e):
+    def changeGridSize(self, e):
         if self.currentSize < self.value:
             self.grids[self.currentSize].offset = flet.transform.Offset(-1.25, 0)
             self.grids[self.value].offset = flet.transform.Offset(0, 0)
@@ -243,7 +245,7 @@ class SizeSelector(flet.Slider):
             self.grids[self.value].offset = flet.transform.Offset(0, 0)
         self.currentSize = self.value
         self.view.floating_action_button = self.grids[self.value].resetButton
-        await self.view.page.update_async()
+        self.view.page.update()
 
 
 class BoxRow(flet.Row):
@@ -292,13 +294,13 @@ class Box(flet.Container):
         self.content = flet.AnimatedSwitcher(expand=True, duration=250)
         self.setIcon()
 
-    async def setSymbol(self, e=None):
+    def setSymbol(self, e=None):
         if (
             bool(e) != (self.manager.current == self.manager.game.bot)
             if self.manager.botted
             else True
         ) and not self.symbol:
-            await self.manager.setSymbol(self)
+            self.manager.setSymbol(self)
 
     def setIcon(self):
         if self.symbol == "X":
@@ -413,7 +415,7 @@ class Menu(flet.View):
                     style=flet.TextThemeStyle.DISPLAY_SMALL,
                 ),
                 data="/bot",
-                on_click=self.go_async,
+                on_click=self.go,
             ),
             flet.Divider(color="#643843"),
             flet.ElevatedButton(
@@ -424,7 +426,7 @@ class Menu(flet.View):
                     style=flet.TextThemeStyle.DISPLAY_SMALL,
                 ),
                 data="/local",
-                on_click=self.go_async,
+                on_click=self.go,
             ),
         ]
 
@@ -444,18 +446,18 @@ class Menu(flet.View):
 
         self.controls = [self.outer_control]
 
-    async def go_async(self, e):
-        await self.page.go_async(e.control.data)
+    def go(self, e):
+        self.page.go(e.control.data)
 
 
-async def main(page: flet.Page):
+def main(page: flet.Page):
     page.title = "Tic Tac Toe"
 
     menu = Menu("/")
     local = PlayerVPlayerLocal("/local")
     bot = PlayerVBot("/bot")
 
-    async def route_change(route):
+    def route_change(route):
         page.views.clear()
         page.views.append(menu)
         if page.route == "/local":
@@ -463,17 +465,17 @@ async def main(page: flet.Page):
         elif page.route == "/bot":
             page.views.append(bot)
 
-        await page.update_async()
+        page.update()
 
-    async def view_pop(view):
+    def view_pop(view):
         page.views.pop()
         top_view = page.views[-1]
-        await page.go_async(top_view.route)
+        page.go(top_view.route)
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
 
-    await page.go_async(page.route)
+    page.go(page.route)
 
 
 flet.app(name="Tic Tac Toe", target=main, assets_dir="assets")
