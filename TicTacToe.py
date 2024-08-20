@@ -7,7 +7,7 @@ import flet
 
 
 class game:
-    def __init__(self, size: int, bot: Literal["X", "O"] = None):
+    def __init__(self, size: int, bot: Literal["X", "O"] = "O"):
         self.size = size
         self.current = "X"
         self.player = "X" if bot == "O" else "O"
@@ -38,7 +38,7 @@ class game:
         pprint(win_map)
         return win_map
 
-    def setSymbol(self, x: int, y: int, symbol: str = None):
+    def setSymbol(self, x: int, y: int, symbol: str = "X"):
         self.filled += 1
         self.gameState[y][x] = symbol if symbol else self.current
         self.current = "X" if (symbol == "O" or self.current == "O") else "O"
@@ -104,7 +104,7 @@ class TicTacToe(flet.UserControl):
         ]
         self.resetButton = None
 
-    def setSymbol(self, box):
+    async def setSymbol(self, box):
         box.symbol = self.current
         self.game.setSymbol(x=box.box_id[1], y=box.box_id[0], symbol=self.current)
         if self.botted:
@@ -118,15 +118,15 @@ class TicTacToe(flet.UserControl):
                 self.end = True
             elif self.game.checkTie():
                 self.showTie()
-        self.update()
+        await self.update()
 
-    def botPlay(self):
+    async def botPlay(self):
         if self.indexes and not self.end:
-            sleep(0.75)
+            await sleep(0.75)
             play = choice(self.indexes)
-            self.inner_control.controls[play[0] + 1].controls[play[1]].setSymbol()
+            await self.inner_control.controls[play[0] + 1].controls[play[1]].setSymbol()
 
-    def reset(self, e):
+    async def reset(self, e):
         self.view.floating_action_button = self.resetButton = None
         for i in self.rows[1:]:
             i.reset()
@@ -136,7 +136,7 @@ class TicTacToe(flet.UserControl):
         if self.botted:
             self.indexes = [(i, j) for i in range(self.size) for j in range(self.size)]
         self.closeDialog()
-        self.update()
+        await self.update()
         self.view.update()
 
     def showWin(self):
@@ -176,7 +176,7 @@ class TicTacToe(flet.UserControl):
             self.view.page.dialog.open = False
             self.view.page.update()
 
-    def update(self):
+    async def update(self):
         if self.game.filled == 1:
             self.resetButton = flet.FloatingActionButton(
                 icon=flet.icons.RESTART_ALT_OUTLINED,
@@ -192,7 +192,7 @@ class TicTacToe(flet.UserControl):
             )
             self.outer_control.update()
             if self.current == self.game.bot:
-                self.botPlay()
+                await self.botPlay()
         else:
             self.playerDisplay.value = f"Player {self.current}'s Turn"
         self.outer_control.update()
@@ -294,13 +294,13 @@ class Box(flet.Container):
         self.content = flet.AnimatedSwitcher(expand=True, duration=250)
         self.setIcon()
 
-    def setSymbol(self, e=None):
+    async def setSymbol(self, e=None):
         if (
             bool(e) != (self.manager.current == self.manager.game.bot)
             if self.manager.botted
             else True
         ) and not self.symbol:
-            self.manager.setSymbol(self)
+            await self.manager.setSymbol(self)
 
     def setIcon(self):
         if self.symbol == "X":
@@ -475,7 +475,7 @@ def main(page: flet.Page):
     page.on_route_change = route_change
     page.on_view_pop = view_pop
 
-    page.go(page.route)
+    page.go("Tic%20Tac%20Toe")
 
 
-flet.app(name="Tic Tac Toe", target=main, assets_dir="assets")
+flet.app(target=main, assets_dir="assets")
